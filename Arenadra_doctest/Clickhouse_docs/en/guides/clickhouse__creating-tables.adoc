@@ -1,0 +1,81 @@
+:doc-name: Creating tables in ClickHouse
+:toc:
+:toc-title: Table of contents
+:toclevels: 3
+:table-caption: Table
+:imagesdir: guides/images
+:figure-caption: Image
+:source-highlighter: highlight.js
+:relfilesuffix: .adoc
+
+= Creating tables in ClickHouse
+
+As with other database systems, ClickHouse organizes tables into databases to structure and manage data efficiently.
+
+== Creating a Database
+
+To create a new database in ClickHouse, use the `CREATE DATABASE` command:
+
+[source,sql]
+----
+CREATE DATABASE IF NOT EXISTS helloworld;
+----
+
+A new database with the name `helloworld` is created.
+
+If you don’t explicitly provide a database name when creating a table, ClickHouse will create the table in the `default` database.
+
+== Creating a Table
+
+Use the `CREATE TABLE` command to define a new table. For example, the following table named `my_first_table` is created inside the `helloworld` database:
+
+[source,sql]
+----
+CREATE TABLE helloworld.my_first_table
+(
+    user_id   UInt32,
+    message   String,
+    timestamp DateTime,
+    metric    Float32
+)
+ENGINE = MergeTree()
+PRIMARY KEY (user_id, timestamp);
+----
+
+In this example, the `MergeTree` table has been created with four columns:
+
+* `user_id`: 32-bit unsigned integer.
+* `message`: `String` type that replaces types like `VARCHAR`, `BLOB`, and `CLOB` found in other databases.
+* `timestamp`: `DateTime` value representing a moment in time.
+* `metric`: 32-bit floating-point number.
+
+[NOTE]
+====
+The table engine defines the following points:
+
+* How and where data is stored?
+* What kinds of queries are supported?
+* Whether or not the data is replicated?
+
+There are many engines to choose from, but for a simple table on a single-node ClickHouse server, it is recommended to select the `MergeTree` engine.
+====
+
+== A brief introduction about the primary keys
+
+Before proceeding, it's essential to have a solid understanding of how **primary keys** function in ClickHouse, as they do not guarantee row-level uniqueness.
+
+A primary key determines how data is organized when it is written to disk.
+For every 8,192 rows or 10MB of data (referred to as a "granule") an entry is created in the primary key index file. This process results in a sparse index that can be easily stored in memory.
+Each granule represents the smallest unit of column data that is processed during a `SELECT` query.
+
+You can specify the primary key using the `PRIMARY KEY` clause.
+If it is not explicitly stated, the key defaults to the expression provided in the `ORDER BY` clause.
+
+If both the `PRIMARY KEY` and `ORDER BY` clauses are set, then the primary key must be a prefix of the sort key.
+
+In the given example, the primary key is the tuple (`user_id`, `timestamp`). This indicates that the data in each column file is sorted first by `user_id` and then by `timestamp`.
+
+[TIP]
+====
+For more details, refer to the link:https://learn.clickhouse.com/visitor_catalog_class/show/1328860/?utm_source=clickhouse&utm_medium=docs[Data Modeling] module in ClickHouse Academy.
+====
